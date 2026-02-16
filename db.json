@@ -1,0 +1,8 @@
+{
+  "zones": [
+    { "id": "1", "name": "Москва", "pollution_index": 92, "history": [80, 85, 90, 95, 92, 88], "coords": [55.75, 37.61] },
+    { "id": "2", "name": "Санкт-Петербург", "pollution_index": 78, "history": [60, 65, 70, 80, 78, 75], "coords": [59.93, 30.33] },
+    { "id": "3", "name": "Новосибирск", "pollution_index": 65, "history": [40, 45, 55, 60, 65, 60], "coords": [55.00, 82.93] },
+    { "id": "4", "name": "Екатеринбург", "pollution_index": 70, "history": [50, 55, 60, 75, 70, 68], "coords": [56.83, 60.60] }
+  ]
+}

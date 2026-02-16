@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "@vue-leaflet/vue-leaflet": "^0.10.1",
+    "apexcharts": "^5.3.6",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.1.0",
+    "leaflet": "^1.9.4",
+    "leaflet-geosearch": "^4.2.2",
+    "vue-leaflet": "^0.1.0",
+    "vue3-apexcharts": "^1.10.0"
+  }
+}
