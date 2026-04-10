@@ -248,16 +248,49 @@
     </main>
   </div>
 
-  <div v-else class="earth-page">
+  <div
+    v-else
+    class="earth-page"
+    :class="`earth-cursor--${earthMode}`"
+    @contextmenu="onEarthContextMenu"
+  >
     <div class="earth-page__topbar">
       <button class="earth-page__back" type="button" @click="goToDashboard">← Назад</button>
       <div class="earth-page__title">3D модель Земли</div>
       <div class="earth-page__spacer"></div>
     </div>
     <div class="earth-page__content" role="region" aria-label="3D модель Земли">
-      <div class="earth-placeholder">
-        <div class="earth-placeholder__globe" aria-hidden="true"></div>
-        <div class="earth-placeholder__text">Страница 3D Земли (в разработке)</div>
+      <div class="earth-viewport">
+        <EarthGlobe />
+      </div>
+    </div>
+
+    <div class="earth-roulette" aria-label="Режим курсора R G B">
+      <div
+        class="earth-roulette__ring"
+        :style="{ transform: `rotate(${earthRotationDeg}deg)` }"
+      >
+        <button
+          type="button"
+          class="earth-roulette__dot earth-roulette__dot--r"
+          :class="{ active: earthMode === 'r' }"
+          aria-label="R"
+          @click="setEarthMode('r')"
+        />
+        <button
+          type="button"
+          class="earth-roulette__dot earth-roulette__dot--g"
+          :class="{ active: earthMode === 'g' }"
+          aria-label="G"
+          @click="setEarthMode('g')"
+        />
+        <button
+          type="button"
+          class="earth-roulette__dot earth-roulette__dot--b"
+          :class="{ active: earthMode === 'b' }"
+          aria-label="B"
+          @click="setEarthMode('b')"
+        />
       </div>
     </div>
   </div>
@@ -270,11 +303,17 @@ import VueApexCharts from "vue3-apexcharts";
 import "leaflet/dist/leaflet.css";
 import { cityData, getLightPollutionData, generateHistoricalData } from './data/lightPollution.js';
 import LocationCard from './components/LocationCard.vue';
+import EarthGlobe from './components/EarthGlobe.vue';
 import { usePDFExport } from './composables/usePDFExport.js';
 
 const { generatePDF } = usePDFExport();
 
 const view = ref('dashboard');
+const earthModes = ['r', 'g', 'b'];
+const earthStep = ref(0);
+const earthModeIndex = computed(() => ((earthStep.value % earthModes.length) + earthModes.length) % earthModes.length);
+const earthMode = computed(() => earthModes[earthModeIndex.value] || 'r');
+const earthRotationDeg = computed(() => -earthStep.value * 120);
 
 // Состояние
 const compareMode = ref(false);
@@ -502,6 +541,24 @@ const goToEarth = () => {
 const goToDashboard = () => {
   window.location.hash = '';
   syncViewFromHash();
+};
+
+const setEarthMode = (mode) => {
+  const idx = earthModes.indexOf(mode);
+  if (idx === -1) return;
+  const current = earthModeIndex.value;
+  const deltaCcwSteps = (idx - current + earthModes.length) % earthModes.length; // 0..2
+  earthStep.value += deltaCcwSteps;
+};
+
+const nextEarthMode = () => {
+  earthStep.value += 1;
+};
+
+const onEarthContextMenu = (e) => {
+  if (view.value !== 'earth') return;
+  e.preventDefault();
+  nextEarthMode();
 };
 
 // Закрытие поиска
@@ -1132,6 +1189,104 @@ body, html, #app {
     #020617;
 }
 
+.earth-cursor--r {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'%3E%3Ccircle cx='9' cy='9' r='6.5' fill='%23ef4444' stroke='white' stroke-opacity='0.35' stroke-width='2'/%3E%3C/svg%3E") 9 9, auto;
+}
+.earth-cursor--g {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'%3E%3Ccircle cx='9' cy='9' r='6.5' fill='%2322c55e' stroke='white' stroke-opacity='0.35' stroke-width='2'/%3E%3C/svg%3E") 9 9, auto;
+}
+.earth-cursor--b {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'%3E%3Ccircle cx='9' cy='9' r='6.5' fill='%233b82f6' stroke='white' stroke-opacity='0.35' stroke-width='2'/%3E%3C/svg%3E") 9 9, auto;
+}
+
+.earth-roulette {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 1001;
+  user-select: none;
+  width: 76px;
+  height: 76px;
+  pointer-events: auto;
+}
+
+.earth-roulette__ring {
+  width: 76px;
+  height: 76px;
+  position: relative;
+  transform-origin: 50% 50%;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.earth-roulette__dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    box-shadow 220ms ease,
+    filter 220ms ease,
+    opacity 220ms ease,
+    transform 220ms ease;
+  opacity: 0.55;
+  filter: saturate(0.75) brightness(0.82) contrast(0.92);
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.earth-roulette__dot.active {
+  opacity: 1;
+  filter: saturate(1.15) brightness(1.08) contrast(1.35);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.92),
+    0 0 18px rgba(255, 255, 255, 0.35),
+    0 10px 22px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  z-index: 2;
+}
+
+.earth-roulette__dot--r {
+  transform: rotate(-90deg) translateY(-30px);
+  background: linear-gradient(165deg, #fecaca 0%, #ef4444 55%, #b91c1c 100%);
+}
+
+.earth-roulette__dot--g {
+  transform: rotate(30deg) translateY(-30px);
+  background: linear-gradient(165deg, #bbf7d0 0%, #22c55e 55%, #15803d 100%);
+}
+
+.earth-roulette__dot--b {
+  transform: rotate(150deg) translateY(-30px);
+  background: linear-gradient(165deg, #bfdbfe 0%, #3b82f6 55%, #1d4ed8 100%);
+}
+
+.earth-roulette__dot--r.active {
+  transform: rotate(-90deg) translateY(-30px) scale(1.14);
+}
+
+.earth-roulette__dot--g.active {
+  transform: rotate(30deg) translateY(-30px) scale(1.14);
+}
+
+.earth-roulette__dot--b.active {
+  transform: rotate(150deg) translateY(-30px) scale(1.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .earth-roulette__ring {
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .earth-page__topbar {
   display: flex;
   align-items: center;
@@ -1169,6 +1324,22 @@ body, html, #app {
   display: grid;
   place-items: center;
   padding: 18px;
+}
+
+.earth-viewport {
+  width: min(980px, 92vw);
+  height: min(620px, calc(100vh - 92px));
+  border-radius: 22px;
+  padding: 14px;
+  background: linear-gradient(168deg, rgba(71, 85, 105, 0.24) 0%, rgba(15, 23, 42, 0.55) 100%);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.earth-viewport > * {
+  width: 100%;
+  height: 100%;
 }
 
 .earth-placeholder {
