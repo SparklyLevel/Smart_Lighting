@@ -1,9 +1,43 @@
 import { jsPDF } from 'jspdf';
+import dejavuBoldUrl from '../assets/fonts/DejaVuSans-Bold.ttf?url';
+import dejavuNormalUrl from '../assets/fonts/DejaVuSans.ttf?url';
+
+const PDF_FONT = 'DejaVuSans';
+const PDF_FONT_FILE_NORMAL = 'DejaVuSans.ttf';
+const PDF_FONT_FILE_BOLD = 'DejaVuSans-Bold.ttf';
+
+function arrayBufferToBinaryString(buffer) {
+  const u8 = new Uint8Array(buffer);
+  const chunk = 0x8000;
+  let binary = '';
+  for (let i = 0; i < u8.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, u8.subarray(i, i + chunk));
+  }
+  return binary;
+}
+
+async function embedCyrillicFonts(doc) {
+  const [normalRes, boldRes] = await Promise.all([
+    fetch(dejavuNormalUrl),
+    fetch(dejavuBoldUrl)
+  ]);
+  const [normalBuf, boldBuf] = await Promise.all([
+    normalRes.arrayBuffer(),
+    boldRes.arrayBuffer()
+  ]);
+  doc.addFileToVFS(PDF_FONT_FILE_NORMAL, arrayBufferToBinaryString(normalBuf));
+  doc.addFileToVFS(PDF_FONT_FILE_BOLD, arrayBufferToBinaryString(boldBuf));
+  doc.addFont(PDF_FONT_FILE_NORMAL, PDF_FONT, 'normal');
+  doc.addFont(PDF_FONT_FILE_BOLD, PDF_FONT, 'bold');
+  doc.setFont(PDF_FONT, 'normal');
+}
 
 export function usePDFExport() {
   
   const generatePDF = async (locations, mode) => {
     const doc = new jsPDF('p', 'mm', 'a4');
+    await embedCyrillicFonts(doc);
+    
     const pageWidth = 210;
     const pageHeight = 297;
     let yPos = 20;
@@ -16,7 +50,7 @@ export function usePDFExport() {
     yPos += 10;
     doc.setFontSize(12);
     doc.setTextColor(100, 116, 139);
-    doc.text('Отчет о качестве ночного неба', pageWidth / 2, yPos, { align: 'center' });
+    doc.text('Report', pageWidth / 2, yPos, { align: 'center' });
     
     yPos += 15;
     doc.setFontSize(10);
@@ -82,9 +116,11 @@ export function usePDFExport() {
             doc.rect(xPos, yPos - 6, colWidths[colIndex], cellHeight, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(9);
+            doc.setFont(PDF_FONT, 'bold');
           } else {
             doc.setTextColor(0, 0, 0);
             doc.setFontSize(10);
+            doc.setFont(PDF_FONT, 'normal');
           }
           doc.text(String(cell), xPos + 3, yPos);
           xPos += colWidths[colIndex];
@@ -159,9 +195,11 @@ export function usePDFExport() {
             doc.rect(xPos, yPos - 6, colWidths[colIndex], cellHeight, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(9);
+            doc.setFont(PDF_FONT, 'bold');
           } else {
             doc.setTextColor(0, 0, 0);
             doc.setFontSize(10);
+            doc.setFont(PDF_FONT, 'normal');
           }
           doc.text(String(cell), xPos + 3, yPos);
           xPos += colWidths[colIndex];
@@ -183,6 +221,7 @@ export function usePDFExport() {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.setTextColor(100, 116, 139);
+      doc.setFont(PDF_FONT, 'normal');
       doc.text(`SkyGlow PRO | Стр. ${i} из ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
     }
 
