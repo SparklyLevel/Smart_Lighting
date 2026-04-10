@@ -399,8 +399,8 @@ const series1 = ref([]);
 const series2 = ref([]);
 
 // Инициализация
-const initFirstLocation = () => {
-  const data = getLightPollutionData(55.7558, 37.6173);
+const initFirstLocation = async () => {
+  const data = await getLightPollutionData(55.7558, 37.6173);
   firstLocation.value = { ...data, name: 'Москва', lat: 55.7558, lon: 37.6173 };
   series1.value = generateHistoricalData(data.sqm, data.bortle);
 };
@@ -413,18 +413,18 @@ const enableCompareMode = () => {
   zoom.value = 5;
 };
 
-const selectCity = (city) => {
+const selectCity = async (city) => {
   if (compareMode.value && selectingForSecond.value && !secondLocation.value) {
     center2.value = [city.lat, city.lon];
-    const data = getLightPollutionData(city.lat, city.lon);
+    const data = await getLightPollutionData(city.lat, city.lon);
     secondLocation.value = { ...data, name: city.name, lat: city.lat, lon: city.lon };
-    series2.value = generateHistoricalData(city.sqm, city.bortle);
+    series2.value = generateHistoricalData(data.sqm, data.bortle);
     selectingForSecond.value = false;
   } else {
     center1.value = [city.lat, city.lon];
-    const data = getLightPollutionData(city.lat, city.lon);
+    const data = await getLightPollutionData(city.lat, city.lon);
     firstLocation.value = { ...data, name: city.name, lat: city.lat, lon: city.lon };
-    series1.value = generateHistoricalData(city.sqm, city.bortle);
+    series1.value = generateHistoricalData(data.sqm, data.bortle);
   }
   searchQuery.value = '';
   showResults.value = false;
@@ -445,7 +445,7 @@ const reverseGeocodeName = async (lat, lng) => {
 
 const applyFirstPoint = async (lat, lng) => {
   center1.value = [lat, lng];
-  const data = getLightPollutionData(lat, lng);
+  const data = await getLightPollutionData(lat, lng);
   firstLocation.value = { ...data, name: 'Точка на карте', lat, lon: lng };
   series1.value = generateHistoricalData(data.sqm, data.bortle);
   loading1.value = true;
@@ -459,7 +459,7 @@ const applyFirstPoint = async (lat, lng) => {
 
 const applySecondPoint = async (lat, lng) => {
   center2.value = [lat, lng];
-  const data = getLightPollutionData(lat, lng);
+  const data = await getLightPollutionData(lat, lng);
   secondLocation.value = { ...data, name: 'Точка на карте', lat, lon: lng };
   series2.value = generateHistoricalData(data.sqm, data.bortle);
   loading2.value = true;

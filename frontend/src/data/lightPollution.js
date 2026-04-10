@@ -126,6 +126,10 @@ export const cityData = {
   "Киевский": { bortle: 5, sqm: 20.7, lat: 55.4333, lon: 36.8333 }
 };
 
+// Глобальный API (если настроен в окружении Vite)
+// Пример: VITE_LIGHT_POLLUTION_API=https://your-api.example.com/light-pollution
+const LIGHT_POLLUTION_API = (import.meta.env.VITE_LIGHT_POLLUTION_API || '').trim();
+
 // Описания для Bortle классов
 export const bortleDescriptions = {
   1: { title: "Отличное темное небо", desc: "Зодиакальный свет виден, Млечный Путь бросает тень", color: "#2563eb" },
@@ -167,8 +171,8 @@ export function generateHistoricalData(currentSQM, bortle) {
   return [{ name: 'SQM', data }];
 }
 
-// Оптимизированная функция получения данных
-export function getLightPollutionData(lat, lon) {
+// Локальная офлайн-модель (fallback)
+export function getLightPollutionDataLocal(lat, lon) {
   let nearestCity = null;
   let minDistance = Infinity;
   
@@ -247,4 +251,52 @@ export function getLightPollutionData(lat, lon) {
     distance: minDistance.toFixed(0),
     confidence: 'estimate'
   };
+}
+
+function normalizeApiPayload(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const bortleRaw = Number(payload.bortle);
+  const sqmRaw = Number(payload.sqm);
+  const source = payload.source || payload.provider || 'Global model';
+  const sourceType = payload.sourceType || 'global';
+  const confidence = payload.confidence || 'model';
+  const distance = payload.distance != null ? String(payload.distance) : undefined;
+
+  if (!Number.isFinite(bortleRaw) || !Number.isFinite(sqmRaw)) return null;
+
+  const bortle = Math.max(1, Math.min(9, Math.round(bortleRaw)));
+  const sqm = Math.max(16, Math.min(22, sqmRaw)).toFixed(2);
+
+  return {
+    bortle,
+    sqm,
+    source,
+    sourceType,
+    confidence,
+    ...(distance ? { distance } : {})
+  };
+}
+
+async function getLightPollutionDataGlobal(lat, lon) {
+  if (!LIGHT_POLLUTION_API) return null;
+  const url = new URL(LIGHT_POLLUTION_API);
+  url.searchParams.set('lat', String(lat));
+  url.searchParams.set('lon', String(lon));
+
+  const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
+  if (!res.ok) throw new Error(`Light pollution API error: ${res.status}`);
+  const payload = await res.json();
+  return normalizeApiPayload(payload);
+}
+
+// Глобальный провайдер с локальным fallback
+export async function getLightPollutionData(lat, lon) {
+  try {
+    const globalData = await getLightPollutionDataGlobal(lat, lon);
+    if (globalData) return globalData;
+  } catch {
+    // Тихо падаем в локальную модель
+  }
+  return getLightPollutionDataLocal(lat, lon);
 }
