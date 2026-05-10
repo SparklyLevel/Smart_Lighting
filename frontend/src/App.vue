@@ -257,11 +257,17 @@
     <div class="earth-page__topbar">
       <button class="earth-page__back" type="button" @click="goToDashboard">← Назад</button>
       <div class="earth-page__title">3D модель Земли</div>
-      <div class="earth-page__spacer"></div>
+      <label class="earth-page__lights" aria-label="Яркость засветов">
+        <span>Засветы</span>
+        <input v-model.number="earthLightIntensity" type="range" min="0.0" max="1.6" step="0.05" />
+      </label>
+      <button class="earth-page__toggle" type="button" @click="toggleEarthRotation">
+        {{ earthAutoRotate ? 'Пауза' : 'Вращать' }}
+      </button>
     </div>
     <div class="earth-page__content" role="region" aria-label="3D модель Земли">
       <div class="earth-viewport">
-        <EarthGlobe />
+        <EarthGlobe :auto-rotate="earthAutoRotate" :light-intensity="earthLightIntensity" />
       </div>
     </div>
 
@@ -311,6 +317,8 @@ const { generatePDF } = usePDFExport();
 const view = ref('dashboard');
 const earthModes = ['r', 'g', 'b'];
 const earthStep = ref(0);
+const earthAutoRotate = ref(true);
+const earthLightIntensity = ref(0.7);
 const earthModeIndex = computed(() => ((earthStep.value % earthModes.length) + earthModes.length) % earthModes.length);
 const earthMode = computed(() => earthModes[earthModeIndex.value] || 'r');
 const earthRotationDeg = computed(() => -earthStep.value * 120);
@@ -541,6 +549,10 @@ const goToEarth = () => {
 const goToDashboard = () => {
   window.location.hash = '';
   syncViewFromHash();
+};
+
+const toggleEarthRotation = () => {
+  earthAutoRotate.value = !earthAutoRotate.value;
 };
 
 const setEarthMode = (mode) => {
@@ -1315,26 +1327,46 @@ body, html, #app {
   letter-spacing: 0.01em;
 }
 
-.earth-page__spacer {
-  width: 88px;
+.earth-page__toggle {
+  border: none;
+  cursor: pointer;
+  color: #e2e8f0;
+  background: linear-gradient(165deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 600;
+  min-width: 88px;
+}
+
+.earth-page__lights {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.earth-page__lights input[type='range'] {
+  width: 120px;
+  accent-color: #fbbf24;
 }
 
 .earth-page__content {
   flex: 1;
-  display: grid;
-  place-items: center;
-  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
 }
 
 .earth-viewport {
-  width: min(980px, 92vw);
-  height: min(620px, calc(100vh - 92px));
-  border-radius: 22px;
-  padding: 14px;
-  background: linear-gradient(168deg, rgba(71, 85, 105, 0.24) 0%, rgba(15, 23, 42, 0.55) 100%);
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .earth-viewport > * {
